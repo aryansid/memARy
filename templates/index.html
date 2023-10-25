@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Analyzer</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Image Analyzer</h1>
+    <form id="image-form">
+        <label for="image_url">Image URL:</label>
+        <input type="text" id="image_url" name="image_url" required>
+        <button type="submit">Analyze</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        $(document).ready(function() {
+            $('#image-form').on('submit', function(event) {
+                event.preventDefault();
+                const imageUrl = $('#image_url').val();
+                $.ajax({
+                    url: '/process',
+                    type: 'POST',
+                    data: { image_url: imageUrl },
+                    success: function(response) {
+                        $('#result').html('<p>' + response + '</p>');
+                    },
+                    error: function(error) {
+                        $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
