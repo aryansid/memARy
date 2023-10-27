@@ -6,9 +6,11 @@
 </head>
 <body>
     <h1>Image Analyzer</h1>
-    <form id="image-form">
-        <label for="image_url">Image URL:</label>
-        <input type="text" id="image_url" name="image_url" required>
+    <!-- Updated form -->
+    <form id="image-form" enctype="multipart/form-data">
+        <!-- Removed URL input -->
+        <label for="file">Upload an Image:</label>
+        <input type="file" id="file" name="file" required>
         <button type="submit">Analyze</button>
     </form>
     <div id="result"></div>
@@ -17,13 +19,23 @@
         $(document).ready(function() {
             $('#image-form').on('submit', function(event) {
                 event.preventDefault();
-                const imageUrl = $('#image_url').val();
+                // Use FormData to gather all form inputs
+                const formData = new FormData($('#image-form')[0]);
                 $.ajax({
                     url: '/process',
                     type: 'POST',
-                    data: { image_url: imageUrl },
-                    success: function(response) {
-                        $('#result').html('<p>' + response + '</p>');
+                    data: formData,
+                    processData: false,  // Required when using FormData
+                    contentType: false,  // Required when using FormData
+                    success: function(response, status, xhr) {
+                        var content_type = xhr.getResponseHeader("Content-Type");
+                        if (content_type === "audio/wav") {
+                            var blob = new Blob([response], { type: content_type });
+                            var audio = new Audio(URL.createObjectURL(blob));
+                            audio.play();
+                        } else {
+                            $('#result').html('<p>Error: Unexpected content type received.</p>');
+                        }
                     },
                     error: function(error) {
                         $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
@@ -31,6 +43,6 @@
                 });
             });
         });
-    </script>
+    </script>    
 </body>
 </html>
