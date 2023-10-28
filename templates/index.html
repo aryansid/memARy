@@ -6,36 +6,35 @@
 </head>
 <body>
     <h1>Image Analyzer</h1>
-    <!-- Updated form -->
     <form id="image-form" enctype="multipart/form-data">
-        <!-- Removed URL input -->
         <label for="file">Upload an Image:</label>
         <input type="file" id="file" name="file" required>
         <button type="submit">Analyze</button>
+        <label for="question">Your Question:</label>
+        <input type="text" id="question" name="question">
     </form>
     <div id="result"></div>
+    
+    <audio id="audioPlayer" controls>
+      Your browser does not support the audio element.
+    </audio>
 
     <script>
         $(document).ready(function() {
             $('#image-form').on('submit', function(event) {
                 event.preventDefault();
-                // Use FormData to gather all form inputs
                 const formData = new FormData($('#image-form')[0]);
+                formData.append('question', $('#question').val());
                 $.ajax({
                     url: '/process',
                     type: 'POST',
                     data: formData,
-                    processData: false,  // Required when using FormData
-                    contentType: false,  // Required when using FormData
-                    success: function(response, status, xhr) {
-                        var content_type = xhr.getResponseHeader("Content-Type");
-                        if (content_type === "audio/wav") {
-                            var blob = new Blob([response], { type: content_type });
-                            var audio = new Audio(URL.createObjectURL(blob));
-                            audio.play();
-                        } else {
-                            $('#result').html('<p>Error: Unexpected content type received.</p>');
-                        }
+                    processData: false,
+                    contentType: false,
+                    // Updated success function
+                    success: function(response) {
+                        const audioUrl = response.audio_url;
+                        $("#audioPlayer").attr("src", audioUrl);
                     },
                     error: function(error) {
                         $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
@@ -43,6 +42,6 @@
                 });
             });
         });
-    </script>    
+    </script>
 </body>
 </html>
