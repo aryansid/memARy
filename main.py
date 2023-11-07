@@ -36,7 +36,8 @@ def process():
       dense_captions = ml.get_dense_captions(filepath)
       print("Received dense captions from Azure.")
     
-      PROMPT = "You are tasked with answering a blind individual's question based on dense captions that describe their current environment. Use these captions to construct a spatially organized and immersive answer. Prioritize objects with the highest confidence scores. Aim for brevity without sacrificing the experience."
+      PROMPT = """You are tasked with answering a blind individual's question based on dense captions that describe their current environment. Use these captions to construct a spatially organized and immersive answer. Prioritize objects with the highest confidence scores. Aim for brevity without sacrificing the experience. 
+      """
       # PROMPT = "You are a sophisticated AI guide who translates the visually descriptive dense captions into precise and straightforward answers to a blind individual's questions. Your task is to weave these dense captions into a concise yet informative response, focusing on objects with higher confidence scores or those most relevant to the question. The goal is to make the experience as seamless and immersive as possible for the blind user."
       if question: 
         PROMPT += f"\n\nUser's Question: {question}"
@@ -47,12 +48,11 @@ def process():
       if not os.path.exists(audio_directory):
           os.makedirs(audio_directory)
 
-      audio_filename = os.path.join(audio_directory, f"audio_{uuid.uuid4()}.wav")
-      ml.text_to_audio(gpt_response, audio_filename, os.getenv("tts_subscription_key"), os.getenv("tts_region"))
+      audio_filename = f"audio_{uuid.uuid4()}.mp3"
+      ml.text_to_speech(gpt_response, audio_filename)
       print(f"Audio file generated.")
-      print(f"Directory: {os.path.dirname(audio_filename)}, Filename: {os.path.basename(audio_filename)}")
     
-      audio_url = f"/audio/{os.path.basename(audio_filename)}"
+      audio_url = f"/audio/{audio_filename}"
       return jsonify({"audio_url": audio_url})
   
   except Exception as e: 
@@ -65,5 +65,9 @@ def home():
 
 if __name__ == "__main__": 
   app.run(debug=True)
+  # app.run(host='0.0.0.0', port=5000)
   
   # TODO: Decide whether to temporarily storage image or send direct byte stream
+  
+  # text = ml.audio_to_text("C:/Users/aryaa/Downloads/sample audio.wav")
+  # print(text)

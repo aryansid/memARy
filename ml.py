@@ -1,9 +1,11 @@
 import http.client, urllib.request, urllib.parse, urllib.error, base64, json, os, openai
-from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig
+from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig, SpeechRecognizer, ResultReason
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 openai.api_key = os.getenv("openai_api_key")
+client = OpenAI()
 
 def get_dense_captions(image_path=None): 
   # Set up the URL and request headers
@@ -64,36 +66,73 @@ def call_gpt_model(prompt, data, model, temperature=None):
     api_params["temperature"] = temperature
 
   try:
-    response = openai.ChatCompletion.create(**api_params)
-    response_content = response['choices'][0]['message']['content'].strip()
+    response = client.chat.completions.create(**api_params)
+    response_content = response.choices[0].message.content.strip()
 
     return response_content
 
   except Exception as e:
     raise RuntimeError(f"An error occurred while making an API call: {e}")
   
-def text_to_audio(text, audio_filename, subscription_key, region):
-    """Converts text to audio and saves it to a file.
+# def text_to_audio(text, audio_filename):
+#     """Converts text to audio and saves it to a file.
 
-    Parameters:
-    - text (str): The text to convert.
-    - audio_filename (str): The name of the audio file to save.
-    - subscription_key (str): Azure subscription key for Text to Speech.
-    - region (str): Azure region where your Text to Speech service is hosted.
-    """
+#     Parameters:
+#     - text (str): The text to convert.
+#     - audio_filename (str): The name of the audio file to save.
+#     - subscription_key (str): Azure subscription key for Text to Speech.
+#     - region (str): Azure region where your Text to Speech service is hosted.
+#     """
 
-    # Configure speech synthesis
-    speech_config = SpeechConfig(subscription=subscription_key, region=region)
-    audio_config = AudioConfig(filename=audio_filename)
+#     # Configure speech synthesis
+#     speech_config = SpeechConfig(subscription=os.getenv("speech_subscription_key"), region=os.getenv("speech_region"))
+#     audio_config = AudioConfig(filename=audio_filename)
 
-    # Create a speech synthesizer
-    synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+#     # Create a speech synthesizer
+#     synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
 
-    # Convert text to speech
-    result = synthesizer.speak_text_async(text).get()
+#     # Convert text to speech
+#     result = synthesizer.speak_text_async(text).get()
 
-    # Check for successful conversion
-    if result.reason == 0:  # 0 denotes failure
-        raise Exception(f"Text-to-speech failed: {result.error_details}")
+#     # Check for successful conversion
+#     if result.reason == 0:  # 0 denotes failure
+#         raise Exception(f"Text-to-speech failed: {result.error_details}")
 
-    print(f"Text-to-speech succeeded. Audio saved as {audio_filename}")
+#     print(f"Text-to-speech succeeded. Audio saved as {audio_filename}")
+
+def text_to_speech(text, filename): 
+  # Construct the path to the directory where the file will be saved
+  audio_files_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audio_files")
+  # Ensure the directory exists
+  if not os.path.exists(audio_files_dir):
+    os.makedirs(audio_files_dir)
+    
+  speech_file_path = os.path.join(audio_files_dir, filename)
+  
+  response = client.audio.speech.create(
+    model="tts-1",
+    voice="shimmer",
+    input=text
+  )
+  
+  response.stream_to_file(speech_file_path)
+    
+def audio_to_text(file_path): 
+  speech_config = SpeechConfig(subscription=os.getenv("speech_subscription_key"), region=os.getenv("speech_region"))
+  audio_config = AudioConfig(filename=file_path)
+  
+  speech_recognizer = SpeechRecognizer(speech_config=speech_config)
+  
+  print("Starting speech recognition ...")
+  result = speech_recognizer.recognize_once()
+  print("Speech recongition complete. Analyzing ...")
+  
+  if result.reason == ResultReason.RecognizedSpeech:
+    return result.text
+  elif result.reason == ResultReason.NoMatch:
+    return "No speech could be recognized."
+  elif result.reason == ResultReason.Canceled:
+    cancellation_details = result.cancellation_details
+    return f"Speech Recognition canceled: {cancellation_details.reason}"
+  else:
+    return "An unknown error occurred."

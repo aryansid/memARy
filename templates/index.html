@@ -1,28 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Analyzer</title>
+    <title>memARy</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label, input, button {
+            margin-bottom: 10px;
+        }
+        
+        input[type="file"], input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        input:focus {
+            border-color: #007bff;
+        }
+        #loading {
+            display: none;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 5px;
+            }
+            input[type="file"], input[type="text"] {
+                width: 100%;
+            }
+            button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Image Analyzer</h1>
-    <form id="image-form" enctype="multipart/form-data">
-        <label for="file">Upload an Image:</label>
-        <input type="file" id="file" name="file" required>
-        <button type="submit">Analyze</button>
-        <label for="question">Your Question:</label>
-        <input type="text" id="question" name="question">
-    </form>
-    <div id="result"></div>
+    <div class="container">
+        <h1>memARy</h1>
     
-    <audio id="audioPlayer" controls>
-      Your browser does not support the audio element.
-    </audio>
-
+        <form id="image-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Upload an Image:</label>
+                <input type="file" id="file" name="file" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="question">Your Question:</label>
+                <input type="text" id="question" name="question">
+            </div>
+            
+            <div class="form-group">
+                <button type="submit">Analyze</button>
+            </div>
+        </form>
+        
+        <div id="result"></div>
+        <div id="loading">Processing...</div>
+        
+        <audio id="audioPlayer" controls>
+        Your browser does not support the audio element.
+        </audio>
+    </div>
     <script>
         $(document).ready(function() {
             $('#image-form').on('submit', function(event) {
                 event.preventDefault();
+                console.log("Form submitted via jQuery"); // New log
                 const formData = new FormData($('#image-form')[0]);
                 formData.append('question', $('#question').val());
                 $.ajax({
@@ -31,12 +100,13 @@
                     data: formData,
                     processData: false,
                     contentType: false,
-                    // Updated success function
                     success: function(response) {
+                        console.log("Success response received"); // New log
                         const audioUrl = response.audio_url;
                         $("#audioPlayer").attr("src", audioUrl);
                     },
                     error: function(error) {
+                        console.log("Error response received"); // New log
                         $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
                     }
                 });
