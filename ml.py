@@ -1,7 +1,10 @@
 import http.client, urllib.request, urllib.parse, urllib.error, base64, json, os, openai
 from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig, SpeechRecognizer, ResultReason
-from dotenv import load_dotenv
+import openai
 from openai import OpenAI
+from dotenv import load_dotenv
+import requests
+import base64
 
 load_dotenv()
 openai.api_key = os.getenv("openai_api_key")
@@ -51,7 +54,6 @@ def get_dense_captions(image_path=None):
       print(f"An error occurred: {e}")
       
 def call_gpt_model(prompt, data, model, temperature=None):
-
   messages = [
       {"role": "system", "content": prompt},
       {"role": "user", "content": data}
@@ -73,6 +75,43 @@ def call_gpt_model(prompt, data, model, temperature=None):
 
   except Exception as e:
     raise RuntimeError(f"An error occurred while making an API call: {e}")
+  
+def call_gpt_vision(base64_image, user): 
+  headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {openai.api_key}"
+  }
+  
+  payload = {
+    "model": "gpt-4-vision-preview",
+    "messages": [
+      {
+        "role": "system", 
+        "content": "You are tasked with answering a blind individual's question about their current environment. Aim for brevity without sacrificing the immersive experience."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": user
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": f"data:image/jpeg;base64,{base64_image}"
+            }
+          }
+        ]
+      }
+    ],
+    "max_tokens": 300
+  }
+  
+  response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+  
+  return response.json()['choices'][0]['message']['content']
+  
   
 # def text_to_audio(text, audio_filename):
 #     """Converts text to audio and saves it to a file.
@@ -100,39 +139,46 @@ def call_gpt_model(prompt, data, model, temperature=None):
 
 #     print(f"Text-to-speech succeeded. Audio saved as {audio_filename}")
 
-def text_to_speech(text, filename): 
-  # Construct the path to the directory where the file will be saved
-  audio_files_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audio_files")
-  # Ensure the directory exists
-  if not os.path.exists(audio_files_dir):
-    os.makedirs(audio_files_dir)
+def text_to_speech(text, filepath):   
+  try: 
+    response = client.audio.speech.create(
+      model="tts-1",
+      voice="shimmer",
+      input=text
+    )
+    response.stream_to_file(filepath)
     
-  speech_file_path = os.path.join(audio_files_dir, filename)
-  
-  response = client.audio.speech.create(
-    model="tts-1",
-    voice="shimmer",
-    input=text
-  )
-  
-  response.stream_to_file(speech_file_path)
+  except Exception as e: 
+    return f"An unexpected error occurred: {str(e)}"
     
-def audio_to_text(file_path): 
-  speech_config = SpeechConfig(subscription=os.getenv("speech_subscription_key"), region=os.getenv("speech_region"))
-  audio_config = AudioConfig(filename=file_path)
+# def audio_to_text(file_path): 
+#   speech_config = SpeechConfig(subscription=os.getenv("speech_subscription_key"), region=os.getenv("speech_region"))
+#   audio_config = AudioConfig(filename=file_path)
   
-  speech_recognizer = SpeechRecognizer(speech_config=speech_config)
+#   speech_recognizer = SpeechRecognizer(speech_config=speech_config)
   
-  print("Starting speech recognition ...")
-  result = speech_recognizer.recognize_once()
-  print("Speech recongition complete. Analyzing ...")
+#   print("Starting speech recognition ...")
+#   result = speech_recognizer.recognize_once()
+#   print("Speech recongition complete. Analyzing ...")
   
-  if result.reason == ResultReason.RecognizedSpeech:
-    return result.text
-  elif result.reason == ResultReason.NoMatch:
-    return "No speech could be recognized."
-  elif result.reason == ResultReason.Canceled:
-    cancellation_details = result.cancellation_details
-    return f"Speech Recognition canceled: {cancellation_details.reason}"
-  else:
-    return "An unknown error occurred."
+#   if result.reason == ResultReason.RecognizedSpeech:
+#     return result.text
+#   elif result.reason == ResultReason.NoMatch:
+#     return "No speech could be recognized."
+#   elif result.reason == ResultReason.Canceled:
+#     cancellation_details = result.cancellation_details
+#     return f"Speech Recognition canceled: {cancellation_details.reason}"
+#   else:
+#     return "An unknown error occurred."
+
+def speech_to_text(filepath):
+  try: 
+    audio_file = open(filepath, "rb")
+    transcript = client.audio.transcriptions.create(
+      model="whisper-1", 
+      file=audio_file, 
+      prompt="The transcript is about a blind person asking about their environment",
+      response_format="text"
+    )
+  except Exception as e: 
+    return f"An unexpected error occurred: {str(e)}"

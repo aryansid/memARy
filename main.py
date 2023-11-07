@@ -1,4 +1,4 @@
-import ml 
+import ml, utils 
 from flask import Flask, request, jsonify, send_file, render_template, make_response
 from flask.helpers import send_from_directory
 from werkzeug.utils import secure_filename
@@ -32,27 +32,21 @@ def process():
       filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
       file.save(filepath)
       print(f"Saved file to {filepath}")
-  
-      dense_captions = ml.get_dense_captions(filepath)
-      print("Received dense captions from Azure.")
-    
-      PROMPT = """You are tasked with answering a blind individual's question based on dense captions that describe their current environment. Use these captions to construct a spatially organized and immersive answer. Prioritize objects with the highest confidence scores. Aim for brevity without sacrificing the experience. 
-      """
-      # PROMPT = "You are a sophisticated AI guide who translates the visually descriptive dense captions into precise and straightforward answers to a blind individual's questions. Your task is to weave these dense captions into a concise yet informative response, focusing on objects with higher confidence scores or those most relevant to the question. The goal is to make the experience as seamless and immersive as possible for the blind user."
-      if question: 
-        PROMPT += f"\n\nUser's Question: {question}"
-      gpt_response = ml.call_gpt_model(PROMPT, json.dumps(dense_captions, indent=4), "gpt-3.5-turbo")
-      print("GPT-3 response received.")
+      
+      base64_image = utils.encode_image(filepath)
+      gpt_response = ml.call_gpt_vision(base64_image, question)
+      print("GPT-4 vision response recieved.")
       
       audio_directory = './audio_files'  
       if not os.path.exists(audio_directory):
           os.makedirs(audio_directory)
 
       audio_filename = f"audio_{uuid.uuid4()}.mp3"
-      ml.text_to_speech(gpt_response, audio_filename)
-      print(f"Audio file generated.")
+      audio_path = os.path.join(audio_directory, audio_filename)
+      ml.text_to_speech(gpt_response, audio_path)
+      print(f"Audio file saved at {audio_path}")
     
-      audio_url = f"/audio/{audio_filename}"
+      audio_url = request.url_root + "audio/" + audio_filename
       return jsonify({"audio_url": audio_url})
   
   except Exception as e: 
@@ -66,8 +60,3 @@ def home():
 if __name__ == "__main__": 
   app.run(debug=True)
   # app.run(host='0.0.0.0', port=5000)
-  
-  # TODO: Decide whether to temporarily storage image or send direct byte stream
-  
-  # text = ml.audio_to_text("C:/Users/aryaa/Downloads/sample audio.wav")
-  # print(text)
