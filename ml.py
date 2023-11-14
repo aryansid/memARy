@@ -7,7 +7,7 @@ import requests
 import base64
 
 load_dotenv()
-openai.api_key = os.getenv("openai_api_key")
+openai_api_key = os.getenv("openai_api_key")
 client = OpenAI()
 
 def get_dense_captions(image_path=None): 
@@ -79,7 +79,7 @@ def call_gpt_model(prompt, data, model, temperature=None):
 def call_gpt_vision(base64_image, user): 
   headers = {
     "Content-Type": "application/json",
-    "Authorization": f"Bearer {openai.api_key}"
+    "Authorization": f"Bearer {openai_api_key}"
   }
   
   payload = {
@@ -149,7 +149,7 @@ def text_to_speech(text, filepath):
     response.stream_to_file(filepath)
     
   except Exception as e: 
-    return f"An unexpected error occurred: {str(e)}"
+    raise RuntimeError(f"An unexpected error occurred: {str(e)}")
     
 # def audio_to_text(file_path): 
 #   speech_config = SpeechConfig(subscription=os.getenv("speech_subscription_key"), region=os.getenv("speech_region"))

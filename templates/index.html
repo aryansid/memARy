@@ -58,6 +58,9 @@
                 width: 100%;
             }
         }
+        video, canvas {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -68,6 +71,12 @@
             <div class="form-group">
                 <label for="file">Upload an Image:</label>
                 <input type="file" id="file" name="file" required>
+            </div>
+
+            <div class="form-group">
+                <button type="button" id="activate-camera">Capture Live</button>
+                <video id="video" width="640" height="480" autoplay style="display:none;"></video>
+                <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
             </div>
             
             <div class="form-group">
@@ -89,6 +98,53 @@
     </div>
     <script>
         $(document).ready(function() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            const activateCameraButton = document.getElementById('activate-camera');
+
+            // Function to start the camera
+            function startCamera() {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                        video.srcObject = stream;
+                        video.play();
+                        video.style.display = 'block';
+                        activateCameraButton.textContent = 'Take Photo';
+                    });
+                }
+            }
+
+            // Activating the camera
+            activateCameraButton.addEventListener('click', function() {
+                if (activateCameraButton.textContent === 'Capture Live') {
+                    startCamera();
+                } else {
+                    // Capture the live photo
+                    context.drawImage(video, 0, 0, 640, 480);
+                    const imageDataURL = canvas.toDataURL('image/png');
+                    // Handle the captured image data URL...
+                    // Converting Data URL to Blob
+                    var blob = dataURLtoBlob(imageDataURL);
+                    var file = new File([blob], "captured_image.png", { type: "image/png" });
+                    var dt = new DataTransfer();
+                    dt.items.add(file);
+                    document.getElementById('file').files = dt.files;
+                    activateCameraButton.textContent = 'Capture Live';
+                    video.style.display = 'none';
+                }
+            });
+
+            // Convert Data URL to Blob, so it can be treated as a File
+            function dataURLtoBlob(dataurl) {
+                var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                    bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+                while(n--){
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                return new Blob([u8arr], {type:mime});
+            }
+
             $('#image-form').on('submit', function(event) {
                 event.preventDefault();
                 console.log("Form submitted via jQuery"); // New log
