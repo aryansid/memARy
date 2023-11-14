@@ -5,8 +5,15 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         .form-group {
+            display: flex;
+            flex-direction: row;
             margin-bottom: 20px;
         }
+
+        .previewImage-container {
+            margin: 0px 20px;
+        }
+
         label, input, button {
             margin-bottom: 10px;
         }
@@ -74,9 +81,15 @@
             </div>
 
             <div class="form-group">
-                <button type="button" id="activate-camera">Capture Live</button>
-                <video id="video" width="640" height="480" autoplay style="display:none;"></video>
-                <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+                <div class="camera-capture">
+                    <button type="button" id="activate-camera">Capture Live</button>
+                    <video id="video" width="640" height="480" autoplay style="display:none;"></video>
+                    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>    
+                </div>
+                <div class="previewImage-container" id="previewImage-container" style="display: none;">
+                    <p style="margin: 17px 0px 10px;">using image</p>
+                    <img id="previewImage" src="#" width="160" height="120">
+                </div>
             </div>
             
             <div class="form-group">
@@ -110,7 +123,7 @@
                         video.srcObject = stream;
                         video.play();
                         video.style.display = 'block';
-                        activateCameraButton.textContent = 'Take Photo';
+                        activateCameraButton.textContent = 'Use Photo';
                     });
                 }
             }
@@ -130,8 +143,16 @@
                     var dt = new DataTransfer();
                     dt.items.add(file);
                     document.getElementById('file').files = dt.files;
-                    activateCameraButton.textContent = 'Capture Live';
-                    video.style.display = 'none';
+
+
+                    previewImage = document.getElementById('previewImage');
+                    previewImageContainer = document.getElementById('previewImage-container');
+
+                    previewImage.src = imageDataURL;                    
+                    previewImageContainer.style = "display: block;";
+
+                    //activateCameraButton.textContent = 'Capture Live';
+                    //video.style.display = 'none';
                 }
             });
 
