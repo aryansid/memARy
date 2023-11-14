@@ -79,7 +79,7 @@ def call_gpt_model(prompt, data, model, temperature=None):
 def call_gpt_vision(base64_image, user): 
   headers = {
     "Content-Type": "application/json",
-    "Authorization": f"Bearer {openai_api_key}"
+    "Authorization": "Bearer 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"
   }
   
   payload = {
