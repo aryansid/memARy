@@ -8,6 +8,7 @@ import base64
 
 load_dotenv()
 openai_api_key = os.getenv("openai_api_key")
+
 client = OpenAI()
 
 def get_dense_captions(image_path=None): 
