@@ -2,12 +2,18 @@ import ml, utils
 from flask import Flask, request, jsonify, send_file, render_template, make_response
 from flask.helpers import send_from_directory
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
 import json, os, uuid
+import googlemaps
+
+load_dotenv()
 
 UPLOAD_FOLDER = './uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
+google_maps_key = os.getenv("google_maps")
+gmaps = googlemaps.Client(key=google_maps_key)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -27,13 +33,25 @@ def process():
     file = request.files['file']
     question = request.form['question']
     
+    latitude = request.form.get('latitude')
+    longitude = request.form.get('longitude')
+    
+    if latitude and longitude: 
+      print(f"Received location data: Latitude = {latitude}, Longitude = {longitude}")
+      reverse_geocode_result = gmaps.reverse_geocode((latitude, longitude))
+      readable_address = reverse_geocode_result[0]['formatted_address']
+      print(f"The readable address is {readable_address}")
+      print("Not implemented into ChatGPT yet")
+    else: 
+      print("")
+    
     if file and allowed_file(file.filename):
       filename = secure_filename(file.filename)
       filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
       file.save(filepath)
       print(f"Saved file to {filepath}")
       
-      base64_image = utils.encode_image(filepath)
+      base64_image = ml.encode_image(filepath)
       gpt_response = ml.call_gpt_vision(base64_image, question)
       print("GPT-4 vision response recieved.")
       

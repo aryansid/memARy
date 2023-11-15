@@ -112,7 +112,10 @@ def call_gpt_vision(base64_image, user):
   response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
   
   return response.json()['choices'][0]['message']['content']
-  
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')  
   
 # def text_to_audio(text, audio_filename):
 #     """Converts text to audio and saves it to a file.

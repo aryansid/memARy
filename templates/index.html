@@ -109,6 +109,9 @@
         Your browser does not support the audio element.
         </audio>
     </div>
+
+    <script src="../static/maps.js"></script>
+
     <script>
         $(document).ready(function() {
             const video = document.getElementById('video');
@@ -169,23 +172,51 @@
             $('#image-form').on('submit', function(event) {
                 event.preventDefault();
                 console.log("Form submitted via jQuery"); // New log
-                const formData = new FormData($('#image-form')[0]);
-                formData.append('question', $('#question').val());
-                $.ajax({
-                    url: '/process',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        console.log("Success response received"); // New log
-                        const audioUrl = response.audio_url;
-                        $("#audioPlayer").attr("src", audioUrl);
-                    },
-                    error: function(error) {
-                        console.log("Error response received"); // New log
-                        $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
+                
+                // Function to handle the form submission
+                // function submitForm(latitude, longitude, errorMessage)
+                function submitForm(latitude, longitude) {
+                    const formData = new FormData($('#image-form')[0]);
+                    formData.append('question', $('#question').val());
+
+                    // Append location data only if available
+                    if (latitude && longitude) {
+                        formData.append('latitude', latitude);
+                        formData.append('longitude', longitude);
+                    // } else if (errorMessage) {
+                    //     // Log the error and display a message on the website
+                    //     console.error(errorMessage);
+                    //     $('#result').html('<p>' + errorMessage + '</p>');
                     }
+
+                    // AJAX request
+                    $.ajax({
+                        url: '/process',
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            console.log("Success response received");
+                            const audioUrl = response.audio_url;
+                            $("#audioPlayer").attr("src", audioUrl);
+                        },
+                        error: function(error) {
+                            console.log("Error response received");
+                            $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
+                        }
+                    });
+                }
+
+                // Call retrieveLocation function from maps.js
+                retrieveLocation(function(latitude, longitude) {
+                    submitForm(latitude, longitude);
+                    // if (latitude && longitude) {
+                    //     submitForm(latitude, longitude);
+                    // }
+                    // else {
+                    //     submitForm(null, null, "Geolocation API failed to retrieve location. Continuing with vision only...");
+                    // }
                 });
             });
         });
