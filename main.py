@@ -37,13 +37,23 @@ def process():
     longitude = request.form.get('longitude')
     
     if latitude and longitude: 
-      print(f"Received location data: Latitude = {latitude}, Longitude = {longitude}")
+      print("Gathering information about your location ... ")
+      print(f"Your current location coordinations: Latitude = {latitude}, Longitude = {longitude}")
+      
       reverse_geocode_result = gmaps.reverse_geocode((latitude, longitude))
       readable_address = reverse_geocode_result[0]['formatted_address']
-      print(f"The readable address is {readable_address}")
-      print("Not implemented into ChatGPT yet")
-    else: 
-      print("")
+      print(f"Your readable address:  {readable_address}")
+      
+      # radius = 100 # GPT has to come up with this 
+      # keyword = "" # ? 
+      # type = 'restaurant' 
+      # places_result = gmaps.places_nearby(location=(latitude,  longitude), radius=radius, type=type)
+      # print(f"Restaurants in 500 meter radius around you: {json.dumps(places_result, indent=4)}")
+      
+      # destination = "Tressider Memorial Union Stanford"
+      # mode = "walking"
+      # directions_result = gmaps.directions(origin=(latitude, longitude), destination=destination, mode=mode)
+      # print(f"Directions from current location to Tressider Stanford: {json.dumps(directions_result, indent=4)}")
     
     if file and allowed_file(file.filename):
       filename = secure_filename(file.filename)
@@ -66,6 +76,7 @@ def process():
     
       audio_url = request.url_root + "audio/" + audio_filename
       return jsonify({"audio_url": audio_url})
+    
   
   except Exception as e: 
     print(f"Caught exception: {e}")  
