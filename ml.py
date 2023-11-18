@@ -7,7 +7,7 @@ import requests
 import base64
 
 load_dotenv()
-openai_api_key = os.getenv("openai_api_key")
+OPENAI_API_KEY = os.getenv("openai_api_key")
 
 client = OpenAI()
 
@@ -80,7 +80,7 @@ def call_gpt_model(prompt, data, model, temperature=None):
 def call_gpt_vision(base64_image, user): 
   headers = {
     "Content-Type": "application/json",
-    "Authorization": "Bearer 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"
+    "Authorization": f"Bearer {OPENAI_API_KEY}"
   }
   
   payload = {
