@@ -76,19 +76,9 @@
     
         <form id="image-form" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="file">Upload an Image:</label>
-                <input type="file" id="file" name="file" required>
-            </div>
-
-            <div class="form-group">
                 <div class="camera-capture">
-                    <button type="button" id="activate-camera">Capture Live</button>
                     <video id="video" width="640" height="480" autoplay style="display:none;"></video>
                     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>    
-                </div>
-                <div class="previewImage-container" id="previewImage-container" style="display: none;">
-                    <p style="margin: 17px 0px 10px;">using image</p>
-                    <img id="previewImage" src="#" width="160" height="120">
                 </div>
             </div>
             
@@ -114,50 +104,60 @@
 
     <script>
         $(document).ready(function() {
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
-            const context = canvas.getContext('2d');
-            const activateCameraButton = document.getElementById('activate-camera');
+            function handleVisionQuestion() {
+                startCamera();
+                createCaptureButton();
+            }
 
-            // Function to start the camera
             function startCamera() {
+                const video = document.getElementById('video');
                 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                     navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
                         video.srcObject = stream;
                         video.play();
                         video.style.display = 'block';
-                        activateCameraButton.textContent = 'Use Photo';
                     });
                 }
             }
 
-            // Activating the camera
-            activateCameraButton.addEventListener('click', function() {
-                if (activateCameraButton.textContent === 'Capture Live') {
-                    startCamera();
-                } else {
-                    // Capture the live photo
+            function createCaptureButton() {
+                var captureButton = $('<button/>', {
+                    text: 'Capture',
+                    id: 'capture-button',
+                    type: 'button', 
+                }).click(function() {
+                    captureImage();
+                });
+
+                // Append the capture button to a specific element, e.g., the form
+                $('#image-form').append(captureButton);
+            }
+
+            function captureImage() {
+                const canvas = document.getElementById('canvas');
+                const context = canvas.getContext('2d');
+                const video = document.getElementById('video');
+
+                console.log("Capturing image from video");
+
+                if (video.srcObject) {
+                    // Capture the live photo from the video stream
                     context.drawImage(video, 0, 0, 640, 480);
+                    console.log("Image drawn on canvas");
+
                     const imageDataURL = canvas.toDataURL('image/png');
-                    // Handle the captured image data URL...
-                    // Converting Data URL to Blob
-                    var blob = dataURLtoBlob(imageDataURL);
-                    var file = new File([blob], "captured_image.png", { type: "image/png" });
-                    var dt = new DataTransfer();
-                    dt.items.add(file);
-                    document.getElementById('file').files = dt.files;
+                    console.log("Data URL created:", imageDataURL);
 
+                    // Convert the captured image to a Blob
+                    let imageBlob = dataURLtoBlob(imageDataURL);
+                    console.log("Blob created:", imageBlob);
 
-                    previewImage = document.getElementById('previewImage');
-                    previewImageContainer = document.getElementById('previewImage-container');
-
-                    previewImage.src = imageDataURL;                    
-                    previewImageContainer.style = "display: block;";
-
-                    //activateCameraButton.textContent = 'Capture Live';
-                    //video.style.display = 'none';
+                    // Then, submit the form with this image
+                    submitFormWithImage(imageFile);
+                } else {
+                    console.error("No video source found");
                 }
-            });
+            }
 
             // Convert Data URL to Blob, so it can be treated as a File
             function dataURLtoBlob(dataurl) {
@@ -168,57 +168,69 @@
                 }
                 return new Blob([u8arr], {type:mime});
             }
+            
+            function submitFormWithImage(imageBlob) {
+                const formData = new FormData();
+                formData.append('file', imageBlob);
+                formData.append('question', $('#question').val());
+                console.log("Form data prepared for submission:", formData);
+
+                submitFormData(formData);
+            }
+
+            // TODO: IMPLEMENT handle_location_quesiton()
+
+            function submitFormData(formData) {
+                console.log("Submitting form data via AJAX");
+
+                // Display a loading message or indicator
+                $('#loading').show();
+
+                $.ajax({
+                    url: '/process', 
+                    type: 'POST',
+                    data: formData,
+                    processData: false, 
+                    contentType: false, 
+                    success: function(response) {
+                        console.log("Success response received");
+                        const audioUrl = response.audio_url;
+                        $("#audioPlayer").attr("src", audioUrl);
+                        $('#loading').hide();
+                    },
+                    error: function(error) {
+                        console.log("Error response received");
+                        $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
+                        $('#loading').hide();
+                    }
+                });
+            }
+
 
             $('#image-form').on('submit', function(event) {
                 event.preventDefault();
-                console.log("Form submitted via jQuery"); // New log
-                
-                // Function to handle the form submission
-                // function submitForm(latitude, longitude, errorMessage)
-                function submitForm(latitude, longitude) {
-                    const formData = new FormData($('#image-form')[0]);
-                    formData.append('question', $('#question').val());
+                let question = $('#question').val();
 
-                    // Append location data only if available
-                    if (latitude && longitude) {
-                        formData.append('latitude', latitude);
-                        formData.append('longitude', longitude);
-                    // } else if (errorMessage) {
-                    //     // Log the error and display a message on the website
-                    //     console.error(errorMessage);
-                    //     $('#result').html('<p>' + errorMessage + '</p>');
-                    }
-
-                    // AJAX request
-                    $.ajax({
-                        url: '/process',
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            console.log("Success response received");
-                            const audioUrl = response.audio_url;
-                            $("#audioPlayer").attr("src", audioUrl);
-                        },
-                        error: function(error) {
-                            console.log("Error response received");
-                            $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
-                        }
-                    });
+                if (question.toLowerCase().includes("vision")) {
+                    handleVisionQuestion();
                 }
+                // else if (question.toLowerCase().includes("location")) {
 
-                // Call retrieveLocation function from maps.js
-                retrieveLocation(function(latitude, longitude) {
-                    submitForm(latitude, longitude);
-                    // if (latitude && longitude) {
-                    //     submitForm(latitude, longitude);
-                    // }
-                    // else {
-                    //     submitForm(null, null, "Geolocation API failed to retrieve location. Continuing with vision only...");
-                    // }
-                });
+                // }
+
+                // // Call retrieveLocation function from maps.js
+                // retrieveLocation(function(latitude, longitude) {
+                //     submitForm(latitude, longitude);
+                //     // if (latitude && longitude) {
+                //     //     submitForm(latitude, longitude);
+                //     // }
+                //     // else {
+                //     //     submitForm(null, null, "Geolocation API failed to retrieve location. Continuing with vision only...");
+                //     // }
+                // });
             });
+
+        
         });
     </script>
 </body>

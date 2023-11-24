@@ -8,18 +8,10 @@ import googlemaps
 
 load_dotenv()
 
-UPLOAD_FOLDER = './uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
 app = Flask(__name__)
-google_maps_key = os.getenv("google_maps")
+app.config['UPLOAD_FOLDER'] = './uploads'
+google_maps_key = os.getenv("google_maps_key")
 gmaps = googlemaps.Client(key=google_maps_key)
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
            
 @app.route('/audio/<filename>', methods=['GET'])
 def serve_audio(filename):
@@ -28,59 +20,78 @@ def serve_audio(filename):
 @app.route('/process', methods=['POST'])
 def process(): 
   try: 
-        
-    print("Received request to process image.")
+    # print("Received request to process image.")
+    # file = request.files['file']
+    question = request.form['question']
+    
+    if "vision" in question: 
+      return handle_vision_question(request)
+    elif "location" in question: 
+      return handle_location_question(request)
+    else: 
+      return jsonify({"message": "Question type not recognized."}), 400
+    
+    # latitude = request.form.get('latitude')
+    # longitude = request.form.get('longitude')
+    
+    # if latitude and longitude: 
+    #   print("Gathering information about your location ... ")
+    #   print(f"Your current location coordinations: Latitude = {latitude}, Longitude = {longitude}")
+      
+    #   reverse_geocode_result = gmaps.reverse_geocode((latitude, longitude))
+    #   readable_address = reverse_geocode_result[0]['formatted_address']
+    #   print(f"Your readable address:  {readable_address}")
+      
+    
+  except Exception as e: 
+    print(f"Caught exception: {e}")  
+    return make_response(jsonify({"error": str(e)}), 400)
+  
+def handle_vision_question(request): 
+  print("Handling vision request ...")
+  try: 
+    if 'file' not in request.files:
+            return jsonify({"error": "No file part in the request"}), 400
+          
     file = request.files['file']
     question = request.form['question']
     
-    latitude = request.form.get('latitude')
-    longitude = request.form.get('longitude')
+    if file.filename == '':
+      print("No file selected")
+      return jsonify({"error": "No file selected"}), 400
     
-    if latitude and longitude: 
-      print("Gathering information about your location ... ")
-      print(f"Your current location coordinations: Latitude = {latitude}, Longitude = {longitude}")
-      
-      reverse_geocode_result = gmaps.reverse_geocode((latitude, longitude))
-      readable_address = reverse_geocode_result[0]['formatted_address']
-      print(f"Your readable address:  {readable_address}")
-      
-      # radius = 100 # GPT has to come up with this 
-      # keyword = "" # ? 
-      # type = 'restaurant' 
-      # places_result = gmaps.places_nearby(location=(latitude,  longitude), radius=radius, type=type)
-      # print(f"Restaurants in 500 meter radius around you: {json.dumps(places_result, indent=4)}")
-      
-      # destination = "Tressider Memorial Union Stanford"
-      # mode = "walking"
-      # directions_result = gmaps.directions(origin=(latitude, longitude), destination=destination, mode=mode)
-      # print(f"Directions from current location to Tressider Stanford: {json.dumps(directions_result, indent=4)}")
-    
-    if file and allowed_file(file.filename):
+    if file:
       filename = secure_filename(file.filename)
       filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
       file.save(filepath)
       print(f"Saved file to {filepath}")
       
       base64_image = ml.encode_image(filepath)
+      
       gpt_response = ml.call_gpt_vision(base64_image, question)
       print("GPT-4 vision response recieved.")
       
-      audio_directory = './audio_files'  
-      if not os.path.exists(audio_directory):
-          os.makedirs(audio_directory)
-
-      audio_filename = f"audio_{uuid.uuid4()}.mp3"
-      audio_path = os.path.join(audio_directory, audio_filename)
-      ml.text_to_speech(gpt_response, audio_path)
-      print(f"Audio file saved at {audio_path}")
-    
-      audio_url = request.url_root + "audio/" + audio_filename
-      return jsonify({"audio_url": audio_url})
-    
+      return handle_audio_response(gpt_response)
   
-  except Exception as e: 
-    print(f"Caught exception: {e}")  
-    return make_response(jsonify({"error": str(e)}), 400)
+  except Exception as e:
+    print(f"Caught exception in handle_vision_question: {e}")
+    return jsonify({"error": str(e)}), 500 
+
+def handle_location_question(request): 
+    return jsonify({"message": "Location processing not implemented yet."}), 501
+  
+def handle_audio_response(text): 
+  audio_directory = './audio_files'  
+  if not os.path.exists(audio_directory):
+    os.makedirs(audio_directory)
+    
+  audio_filename = f"audio_{uuid.uuid4()}.mp3"
+  audio_path = os.path.join(audio_directory, audio_filename)
+  ml.text_to_speech(text, audio_path)
+  print(f"Audio file saved at {audio_path}")
+    
+  audio_url = request.url_root + "audio/" + audio_filename
+  return jsonify({"audio_url": audio_url})
 
 @app.route('/')
 def home():
