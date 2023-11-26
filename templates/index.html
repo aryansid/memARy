@@ -138,24 +138,40 @@
                 const context = canvas.getContext('2d');
                 const video = document.getElementById('video');
 
-                console.log("Capturing image from video");
+                console.log("Capturing image ...");
 
+                // Show the canvas and hide the video element
+                canvas.style.display = 'block';
+                video.style.display = 'none';
+
+                // Capture the live photo from the video stream
+                context.drawImage(video, 0, 0, 640, 480);
+                console.log("Image drawn on canvas");
+
+                const imageDataURL = canvas.toDataURL('image/png');
+                console.log("Data URL created");
+
+                // Convert the data URL to a Blob
+                let imageBlob = dataURLtoBlob(imageDataURL);
+                console.log("Blob created");
+
+                // Convert the Blob to a File
+                const imageFile = new File([imageBlob], "captured_image.png", { type: 'image/png' });
+                console.log("File created from Blob");
+
+                // Then, submit the form with this image
+                submitFormWithImage(imageFile);
+
+                // Stop all video streams to deactivate the camera
                 if (video.srcObject) {
-                    // Capture the live photo from the video stream
-                    context.drawImage(video, 0, 0, 640, 480);
-                    console.log("Image drawn on canvas");
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                }
 
-                    const imageDataURL = canvas.toDataURL('image/png');
-                    console.log("Data URL created:", imageDataURL);
+                video.style.display = 'none';
 
-                    // Convert the captured image to a Blob
-                    let imageBlob = dataURLtoBlob(imageDataURL);
-                    console.log("Blob created:", imageBlob);
-
-                    // Then, submit the form with this image
-                    submitFormWithImage(imageFile);
-                } else {
-                    console.error("No video source found");
+                var captureButton = document.getElementById('capture-button');
+                if (captureButton) {
+                    captureButton.remove();
                 }
             }
 
@@ -170,6 +186,7 @@
             }
             
             function submitFormWithImage(imageBlob) {
+                console.log("Submitting form with image ...")
                 const formData = new FormData();
                 formData.append('file', imageBlob);
                 formData.append('question', $('#question').val());
@@ -178,7 +195,28 @@
                 submitFormData(formData);
             }
 
-            // TODO: IMPLEMENT handle_location_quesiton()
+            function handleLocationQuestion() {
+                console.log("Initiating location retrieval...")
+                retrieveLocation(function(latitude, longitude) {
+                    if (latitude && longitude) {
+                        submitFormWithLocation(latitude, longitude);
+                    }
+                    else {
+                        console.error("Location data is null.");
+                        submitFormWithLocation(null, null);
+                    }
+                });
+            }
+
+            function submitFormWithLocation(latitude, longitude) {
+                console.log("Submitting form with location data ...")
+                const formData = new FormData();
+                formData.append('question', $('#question').val());
+                formData.append('latitude', latitude.toString());
+                formData.append('longitude', longitude.toString());
+
+                submitFormData(formData);
+            }
 
             function submitFormData(formData) {
                 console.log("Submitting form data via AJAX");
@@ -196,12 +234,12 @@
                         console.log("Success response received");
                         const audioUrl = response.audio_url;
                         $("#audioPlayer").attr("src", audioUrl);
-                        $('#loading').hide();
+                        $('#processing-message').hide();
                     },
                     error: function(error) {
                         console.log("Error response received");
                         $('#result').html('<p>Error occurred: ' + error.responseText + '</p>');
-                        $('#loading').hide();
+                        $('#processing-message').hide();
                     }
                 });
             }
@@ -209,25 +247,18 @@
 
             $('#image-form').on('submit', function(event) {
                 event.preventDefault();
+
+                // Show the processing message
+                $('#processing-message').text('Processing...').show();
+
                 let question = $('#question').val();
 
                 if (question.toLowerCase().includes("vision")) {
                     handleVisionQuestion();
                 }
-                // else if (question.toLowerCase().includes("location")) {
-
-                // }
-
-                // // Call retrieveLocation function from maps.js
-                // retrieveLocation(function(latitude, longitude) {
-                //     submitForm(latitude, longitude);
-                //     // if (latitude && longitude) {
-                //     //     submitForm(latitude, longitude);
-                //     // }
-                //     // else {
-                //     //     submitForm(null, null, "Geolocation API failed to retrieve location. Continuing with vision only...");
-                //     // }
-                // });
+                else if (question.toLowerCase().includes("location")) {
+                    handleLocationQuestion();
+                }
             });
 
         

@@ -20,8 +20,6 @@ def serve_audio(filename):
 @app.route('/process', methods=['POST'])
 def process(): 
   try: 
-    # print("Received request to process image.")
-    # file = request.files['file']
     question = request.form['question']
     
     if "vision" in question: 
@@ -29,19 +27,7 @@ def process():
     elif "location" in question: 
       return handle_location_question(request)
     else: 
-      return jsonify({"message": "Question type not recognized."}), 400
-    
-    # latitude = request.form.get('latitude')
-    # longitude = request.form.get('longitude')
-    
-    # if latitude and longitude: 
-    #   print("Gathering information about your location ... ")
-    #   print(f"Your current location coordinations: Latitude = {latitude}, Longitude = {longitude}")
-      
-    #   reverse_geocode_result = gmaps.reverse_geocode((latitude, longitude))
-    #   readable_address = reverse_geocode_result[0]['formatted_address']
-    #   print(f"Your readable address:  {readable_address}")
-      
+      return jsonify({"message": "Question type not recognized."}), 400    
     
   except Exception as e: 
     print(f"Caught exception: {e}")  
@@ -78,7 +64,26 @@ def handle_vision_question(request):
     return jsonify({"error": str(e)}), 500 
 
 def handle_location_question(request): 
-    return jsonify({"message": "Location processing not implemented yet."}), 501
+  print("Handling location request ...")
+  
+  try: 
+    latitude = request.form.get('latitude')
+    longitude = request.form.get('longitude')
+    print(f"Location recieved: ({latitude}, {longitude})")
+    
+    if not latitude or not longitude: 
+      text = "Location could not be determined."
+    else: 
+      reverse_geocode_result = gmaps.reverse_geocode((latitude, longitude))
+      readable_address = reverse_geocode_result[0]['formatted_address']
+    
+      text = "Your readable address is" + readable_address  
+    
+    return handle_audio_response(text)
+  
+  except Exception as e: 
+    print(f"Caught exception in handle_location_question: {e}")
+    return jsonify({"error": str(e)}), 500 
   
 def handle_audio_response(text): 
   audio_directory = './audio_files'  
