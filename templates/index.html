@@ -4,6 +4,38 @@
     <title>memARy</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+        #intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            z-index: 1000; /* Make sure it's above all other content */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #enter-site-button {
+            padding: 10px 20px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1001; /* Above the overlay */
+            background-color: rgba(255, 255, 255, 0.7); /* White with slight transparency */
+            color: #000; /* Text color */
+            border: none;
+            border-radius: 5px;
+            position: absolute;
+            left: 50%;
+            top: 70%; /* Adjust this to move down the page */
+            transform: translateX(-50%); /* Only horizontally center */
+        }
+
+        #enter-site-button:hover {
+            background-color: rgba(255, 255, 255, 0.9); /* Less transparency on hover */
+        }
+        
         .form-group {
             display: flex;
             flex-direction: row;
@@ -68,36 +100,57 @@
         video, canvas {
             margin-bottom: 10px;
         }
+        
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>memARy</h1>
+    <div id="intro-overlay">
+        <img src="../static/assets/cover_image_2.png" alt="Welcome Image" style="width:100%;height:100%;object-fit:cover;">
+        <button id="enter-site-button" style="position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);">Enter Site</button>
+    </div>
     
-        <form id="image-form" enctype="multipart/form-data">
-            <div class="form-group">
-                <div class="camera-capture">
-                    <video id="video" width="640" height="480" autoplay style="display:none;"></video>
-                    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>    
+    <div id="main-content" style="display: none;">
+        <div class="container">
+            <h1>memARy</h1>
+        
+            <form id="image-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <div class="camera-capture">
+                        <video id="video" width="640" height="480" autoplay style="display:none;"></video>
+                        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>    
+                    </div>
                 </div>
-            </div>
+                
+                <div class="form-group">
+                    <label for="question">Your Question:</label>
+                    <input type="text" id="question" name="question">
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit">Analyze</button>
+                </div>
+            </form>
             
-            <div class="form-group">
-                <label for="question">Your Question:</label>
-                <input type="text" id="question" name="question">
-            </div>
+            <div id="result"></div>
+            <div id="loading">Processing...</div>
             
-            <div class="form-group">
-                <button type="submit">Analyze</button>
-            </div>
-        </form>
-        
-        <div id="result"></div>
-        <div id="loading">Processing...</div>
-        
-        <audio id="audioPlayer" controls>
-        Your browser does not support the audio element.
-        </audio>
+            <audio id="audioPlayer" controls>
+            Your browser does not support the audio element.
+            </audio>
+        </div>
+        <script>
+            // Wait for the DOM to load
+            document.addEventListener('DOMContentLoaded', (event) => {
+                // When the 'Enter Site' button is clicked
+                document.getElementById('enter-site-button').addEventListener('click', function() {
+                    // Hide the intro overlay
+                    document.getElementById('intro-overlay').style.display = 'none';
+                    // Show the main content
+                    document.getElementById('main-content').style.display = 'block';
+                });
+            });
+        </script>
+            
     </div>
 
     <script src="../static/maps.js"></script>
