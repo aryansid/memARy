@@ -17,7 +17,7 @@ export default function Home() {
         home page
       </h1>
       <div className="flex justify-center">
-        <Camera ref={camera} errorMessages={{
+        <Camera ref={camera} facingMode='environment' errorMessages={{
           noCameraAccessible: 'no camera accessible',
           permissionDenied: 'permission denied',
           switchCamera: 'switch cameras',
