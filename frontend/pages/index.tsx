@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] });
 export default function Home() {
   const camera = useRef(null);
   const [image, setImage] = useState(null);
-  
+
   return (
     <main className="flex-col">
       <h1>
@@ -24,6 +24,12 @@ export default function Home() {
           canvas: 'canvas',
         }} />
       </div>
+      <button
+        onClick={() => {
+          //@ts-ignore
+          camera.current.switchCamera();
+        }}
+      />
     </main>
   )
 }
