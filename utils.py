@@ -4,7 +4,7 @@ import json
 from langchain.chat_models import ChatOpenAI
 from langchain.tools import StructuredTool
 from langchain.agents import initialize_agent, AgentType
-from pydantic import BaseModel, Field
+from pydantic.v1  import BaseModel, Field
 from datetime import datetime
 from typing import Optional, Union, List, Tuple, Any 
 from dotenv import load_dotenv
