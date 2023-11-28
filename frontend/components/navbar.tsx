@@ -10,7 +10,7 @@ export default function Navbar() {
         {/* Your navigation links go here */}
         <div className="flex xxs:justify-evenly lg:justify-normal">
           <Link className={linkStyles} href="/">Home</Link>
-          <Link className={linkStyles} href="/">Camera</Link>
+          <Link className={linkStyles} href="/camera">Camera</Link>
           {/* <Link className={linkStyles} href="/">Logs</Link> */}
         </div>
       </nav>
