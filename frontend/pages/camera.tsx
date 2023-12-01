@@ -1,3 +1,4 @@
+import QuestionForm from "@/components/questionform";
 import { useRef, useState } from "react";
 import {Camera} from "react-camera-pro";
 
@@ -55,6 +56,7 @@ export default function MainCamera() {
         />
       </div>
     }
+    <QuestionForm/>
   </div>
   )
 };
