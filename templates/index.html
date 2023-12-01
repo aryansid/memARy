@@ -136,6 +136,7 @@
                 </div>
                 
                 <div class="form-group">
+                    <button type="button" id="take-photo-button">Take Photo</button>
                     <button type="submit">Analyze</button>
                 </div>
             </form>
@@ -163,13 +164,21 @@
     </div>
 
     <script src="../static/maps.js"></script>
-
+    <!-- <script src="../static/agent.js"></script> -->
     <script>
         $(document).ready(function() {
-            function handleVisionQuestion() {
+            // function handleVisionQuestion() {
+            //     startCamera();
+            //     createCaptureButton();
+            // }
+
+            let photoCaptured = false;
+            let capturedImageData = null;
+
+            document.getElementById('take-photo-button').addEventListener('click', function() {
                 startCamera();
                 createCaptureButton();
-            }
+            });
 
             function startCamera() {
                 const video = document.getElementById('video');
@@ -178,6 +187,7 @@
                         video.srcObject = stream;
                         video.play();
                         video.style.display = 'block';
+                        console.log("Camera started");
                     });
                 }
             }
@@ -188,6 +198,7 @@
                     id: 'capture-button',
                     type: 'button', 
                 }).click(function() {
+                    console.log("Capture button clicked");
                     captureImage();
                 });
 
@@ -213,16 +224,26 @@
                 const imageDataURL = canvas.toDataURL('image/png');
                 console.log("Data URL created");
 
-                // Convert the data URL to a Blob
-                let imageBlob = dataURLtoBlob(imageDataURL);
-                console.log("Blob created");
+                capturedImageData = imageDataURL;
 
-                // Convert the Blob to a File
-                const imageFile = new File([imageBlob], "captured_image.png", { type: 'image/png' });
-                console.log("File created from Blob");
+                // // Convert the data URL to a Blob
+                // let imageBlob = dataURLtoBlob(imageDataURL);
+                // console.log("Blob created");
 
-                // Then, submit the form with this image
-                submitFormWithImage(imageFile);
+                // // Convert the Blob to a File
+                // const imageFile = new File([imageBlob], "captured_image.png", { type: 'image/png' });
+                // console.log("File created from Blob");
+
+                // // Then, submit the form with this image
+                // submitFormWithImage(imageFile);
+
+                // Set the flag to indicate a photo has been captured
+                if (imageDataURL) {
+                    photoCaptured = true;
+                    console.log("Photo captured successfully");
+                } else {
+                    console.error("Failed to capture image or generate data URL");
+                }
 
                 // Stop all video streams to deactivate the camera
                 if (video.srcObject) {
@@ -247,38 +268,38 @@
                 return new Blob([u8arr], {type:mime});
             }
             
-            function submitFormWithImage(imageBlob) {
-                console.log("Submitting form with image ...")
-                const formData = new FormData();
-                formData.append('file', imageBlob);
-                formData.append('question', $('#question').val());
-                console.log("Form data prepared for submission:", formData);
+            // function submitFormWithImage(imageBlob) {
+            //     console.log("Submitting form with image ...")
+            //     const formData = new FormData();
+            //     formData.append('file', imageBlob);
+            //     formData.append('question', $('#question').val());
+            //     console.log("Form data prepared for submission:", formData);
 
-                submitFormData(formData);
-            }
+            //     submitFormData(formData);
+            // }
 
-            function handleLocationQuestion() {
-                console.log("Initiating location retrieval...")
-                retrieveLocation(function(latitude, longitude) {
-                    if (latitude && longitude) {
-                        submitFormWithLocation(latitude, longitude);
-                    }
-                    else {
-                        console.error("Location data is null.");
-                        submitFormWithLocation(null, null);
-                    }
-                });
-            }
+            // function handleLocationQuestion() {
+            //     console.log("Initiating location retrieval...")
+            //     retrieveLocation(function(latitude, longitude) {
+            //         if (latitude && longitude) {
+            //             submitFormWithLocation(latitude, longitude);
+            //         }
+            //         else {
+            //             console.error("Location data is null.");
+            //             submitFormWithLocation(null, null);
+            //         }
+            //     });
+            // }
 
-            function submitFormWithLocation(latitude, longitude) {
-                console.log("Submitting form with location data ...")
-                const formData = new FormData();
-                formData.append('question', $('#question').val());
-                formData.append('latitude', latitude.toString());
-                formData.append('longitude', longitude.toString());
+            // function submitFormWithLocation(latitude, longitude) {
+            //     console.log("Submitting form with location data ...")
+            //     const formData = new FormData();
+            //     formData.append('question', $('#question').val());
+            //     formData.append('latitude', latitude.toString());
+            //     formData.append('longitude', longitude.toString());
 
-                submitFormData(formData);
-            }
+            //     submitFormData(formData);
+            // }
 
             function submitFormData(formData) {
                 console.log("Submitting form data via AJAX");
@@ -306,6 +327,27 @@
                 });
             }
 
+            function submitForm() {
+                let question = $('#question').val();
+                retrieveLocation(function(latitude, longitude) {
+                    const formData = new FormData();
+                    formData.append('question', question);
+                    formData.append('latitude', latitude ? latitude.toString() : '');
+                    formData.append('longitude', longitude ? longitude.toString() : '');
+
+                    if (photoCaptured) {
+                        // Convert the data URL to a Blob
+                        let imageBlob = dataURLtoBlob(capturedImageData);
+
+                        // Convert the Blob to a File
+                        const imageFile = new File([imageBlob], "captured_image.png", { type: 'image/png' });
+                        formData.append('file', imageFile);
+                    }
+
+                    submitFormData(formData);
+                });
+            }
+
 
             $('#image-form').on('submit', function(event) {
                 event.preventDefault();
@@ -313,15 +355,13 @@
                 // Show the processing message
                 $('#processing-message').text('Processing...').show();
 
-                let question = $('#question').val();
+                submitForm();
 
-                if (question.toLowerCase().includes("vision")) {
-                    handleVisionQuestion();
-                }
-                else if (question.toLowerCase().includes("location")) {
-                    handleLocationQuestion();
-                }
-            });        
+                // Call the agent with the user question
+                // processQuestion(question);
+            });
+
+        
         });
     </script>
 </body>

@@ -5,6 +5,9 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import json, os, uuid
 import googlemaps
+from agents import agent_tools
+from langchain.chat_models import ChatOpenAI
+from langchain.agents import initialize_agent, AgentType
 
 load_dotenv()
 
@@ -12,7 +15,10 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = './uploads'
 google_maps_key = os.getenv("google_maps_key")
 gmaps = googlemaps.Client(key=google_maps_key)
-           
+
+llm = ChatOpenAI(model="gpt-4")
+agent = initialize_agent(agent_tools, llm, agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION, verbose=True)
+      
 @app.route('/audio/<filename>', methods=['GET'])
 def serve_audio(filename):
     return send_from_directory(os.path.join('./audio_files'), filename, mimetype='audio/wav')
@@ -22,12 +28,22 @@ def process():
   try: 
     question = request.form['question']
     
-    if "vision" in question: 
-      return handle_vision_question(request)
-    elif "location" in question: 
-      return handle_location_question(request)
-    else: 
-      return jsonify({"message": "Question type not recognized."}), 400    
+    # Extract location data 
+    latitude = request.form.get('latitude')
+    longitude = request.form.get('longitude')
+    
+    # Extract image if available 
+    # TODO
+    
+    # Change agent prompt
+    agent_chain = agent.invoke(
+      {
+        "input": f"The user's coordinates are {latitude, longitude}. The user's question is: {question}"
+      }
+    )
+    output = agent_chain['output']
+    print(output) # debugging line, remove later
+    handle_audio_response(output)
     
   except Exception as e: 
     print(f"Caught exception: {e}")  
